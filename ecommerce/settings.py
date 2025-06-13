@@ -240,3 +240,4 @@ EMAIL_USE_TLS='True'
 
 EMAIL_HOST_USER='eslammonty75@gmail.com' #the host email that sends passwords reset emails
 EMAIL_HOST_PASSWORD='gpgb gonb gcqn vpwd'
+PIP_DISABLE_PIP_VERSION_CHECK=1
