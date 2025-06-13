@@ -129,6 +129,9 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_filters',
     'crispy_forms', #crispy forms
+    'psycopg2-binary',
+    'psycopg2',
+
 
 ]
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
