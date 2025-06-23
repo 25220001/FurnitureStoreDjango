@@ -159,9 +159,9 @@ def product_assistant_stream(request):
     available_colors = list(Color.objects.values_list('name', flat=True))
     
     def generate_response():
-        try:
-            # System prompt محسن مع بيانات المنتجات الفعلية
-            analysis_prompt = f"""
+        # try:
+        # System prompt محسن مع بيانات المنتجات الفعلية
+        analysis_prompt = f"""
 أنت مساعد ذكي لموقع {website_name} للأثاث والمفروشات.
 
 الفئات المتاحة: {', '.join(available_categories)}
@@ -183,61 +183,61 @@ def product_assistant_stream(request):
 رسالة المستخدم: "{user_message}"
 """
 
-            # استدعاء ChatGPT للتحليل
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": analysis_prompt}
-                ],
-                max_tokens=300,
-                temperature=0.3,
-                stream=True
-            )
-            
-            full_response = ""
-            
-            # Stream the response
-            for chunk in response:
-                if chunk.choices[0].delta.content is not None:
-                    content = chunk.choices[0].delta.content
-                    full_response += content
+        # استدعاء ChatGPT للتحليل
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": analysis_prompt}
+            ],
+            max_tokens=300,
+            temperature=0.3,
+            stream=True
+        )
+        
+        full_response = ""
+        
+        # Stream the response
+        for chunk in response:
+            if chunk.choices[0].delta.content is not None:
+                content = chunk.choices[0].delta.content
+                full_response += content
+                
+                # Send chunk as SSE format
+                yield f"data: {json.dumps({'chunk': content}, ensure_ascii=False)}\n\n"
+        
+        # تحليل الإجابة النهائية والبحث في المنتجات
+        try:
+            if '"product_search": true' in full_response or '"product_search":true' in full_response:
+                # استخراج JSON من الإجابة
+                json_match = re.search(r'\{.*"product_search".*\}', full_response, re.DOTALL)
+                if json_match:
+                    json_str = json_match.group(0)
+                    product_data = json.loads(json_str)
                     
-                    # Send chunk as SSE format
-                    yield f"data: {json.dumps({'chunk': content}, ensure_ascii=False)}\n\n"
-            
-            # تحليل الإجابة النهائية والبحث في المنتجات
-            try:
-                if '"product_search": true' in full_response or '"product_search":true' in full_response:
-                    # استخراج JSON من الإجابة
-                    json_match = re.search(r'\{.*"product_search".*\}', full_response, re.DOTALL)
-                    if json_match:
-                        json_str = json_match.group(0)
-                        product_data = json.loads(json_str)
-                        
-                        # البحث في المنتجات الفعلية
-                        products_found = search_products_by_criteria(product_data)
-                        
-                        # إرسال النتائج
-                        result_data = {
-                            'final_result': 'product_search',
-                            'search_criteria': product_data,
-                            'products_found': len(products_found),
-                            'products': products_found[:10]  # أول 10 منتجات
-                        }
-                        yield f"data: {json.dumps(result_data, ensure_ascii=False)}\n\n"
-                    else:
-                        yield f"data: {json.dumps({'final_result': 'normal_response', 'message': full_response}, ensure_ascii=False)}\n\n"
+                    # البحث في المنتجات الفعلية
+                    products_found = search_products_by_criteria(product_data)
+                    
+                    # إرسال النتائج
+                    result_data = {
+                        'final_result': 'product_search',
+                        'search_criteria': product_data,
+                        'products_found': len(products_found),
+                        'products': products_found[:10]  # أول 10 منتجات
+                    }
+                    yield f"data: {json.dumps(result_data, ensure_ascii=False)}\n\n"
                 else:
                     yield f"data: {json.dumps({'final_result': 'normal_response', 'message': full_response}, ensure_ascii=False)}\n\n"
-                    
-            except json.JSONDecodeError:
+            else:
                 yield f"data: {json.dumps({'final_result': 'normal_response', 'message': full_response}, ensure_ascii=False)}\n\n"
+                
+        except json.JSONDecodeError:
+            yield f"data: {json.dumps({'final_result': 'normal_response', 'message': full_response}, ensure_ascii=False)}\n\n"
+        
+        yield "data: [DONE]\n\n"
             
-            yield "data: [DONE]\n\n"
-            
-        except Exception as e:
-            error_message = f"عذراً، حدث خطأ في {website_name}. يرجى المحاولة مرة أخرى."
-            yield f"data: {json.dumps({'error': error_message}, ensure_ascii=False)}\n\n"
+        # except Exception as e:
+        #     error_message = f"عذراً، حدث خطأ في {website_name}. يرجى المحاولة مرة أخرى."
+        #     yield f"data: {json.dumps({'error': error_message}, ensure_ascii=False)}\n\n"
     
     response = StreamingHttpResponse(generate_response(), content_type='text/event-stream')
     response['Cache-Control'] = 'no-cache'
