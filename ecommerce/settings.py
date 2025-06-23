@@ -241,3 +241,5 @@ PIP_DISABLE_PIP_VERSION_CHECK=1
 
 import tempfile
 MEDIA_ROOT = tempfile.gettempdir()
+
+OPENAI_API_KEY = "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"
