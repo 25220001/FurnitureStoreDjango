@@ -242,5 +242,4 @@ PIP_DISABLE_PIP_VERSION_CHECK=1
 import tempfile
 MEDIA_ROOT = tempfile.gettempdir()
 
-import os
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+
