@@ -147,7 +147,7 @@ def product_assistant_stream(request):
         # Parse request data
         data = json.loads(request.body)
         user_message = data.get('message', '')
-        website_name = data.get('website_name', 'موقعنا')
+        website_name = "Funco"
         
         if not user_message:
             return JsonResponse({
