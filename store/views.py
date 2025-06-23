@@ -11,8 +11,10 @@ from .serializers import (
 
 # GET /api/products/ - List all products (replaces store view)
 class ProductListView(generics.ListAPIView):
-    queryset = Product.objects.all().select_related('category').prefetch_related('reviews')
+
+    queryset = Product.objects.all().select_related('category').prefetch_related('reviews', 'images') 
     serializer_class = ProductListSerializer
+    
     permission_classes = [AllowAny]
     
     def get_queryset(self):

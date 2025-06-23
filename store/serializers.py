@@ -33,27 +33,30 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 class ProductListSerializer(serializers.ModelSerializer):
-    """Simplified serializer for product lists"""
     category = CategorySerializer(read_only=True)
-    main_image = serializers.ImageField(read_only=True)
+    main_image = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'slug', 'price', 'main_image', 
+            'id', 'name', 'slug', 'price', 'main_image',
             'category', 'average_rating', 'review_count'
         ]
-    
+
+    def get_main_image(self, obj):
+        primary_image = obj.images.filter(is_primary=True).first()
+        if primary_image and primary_image.image:
+            request = self.context.get('request')
+            return request.build_absolute_uri(primary_image.image.url) if request else primary_image.image.url
+        return None
+
     def get_average_rating(self, obj):
-        reviews = obj.reviews.all()
-        if reviews:
-            return sum(review.rating for review in reviews) / len(reviews)
-        return 0
-    
+        return obj.average_rating
+
     def get_review_count(self, obj):
-        return obj.reviews.count()
+        return obj.review_count
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for individual product view"""
