@@ -1,6 +1,5 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
@@ -12,8 +11,9 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.conf import settings
-
+from rest_framework.permissions import IsAuthenticated,AllowAny
 from .serializers import (
+
     UserRegistrationSerializer, 
     UserLoginSerializer, 
     UserUpdateSerializer,
@@ -26,6 +26,7 @@ from .token import user_tokenizer_generate
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def register_api(request):
     """
     User Registration API
@@ -58,6 +59,8 @@ def register_api(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
+
 def login_api(request):
     """
     User Login API
@@ -115,6 +118,7 @@ def dashboard_api(request):
 
 
 @api_view(['GET', 'PUT'])
+
 @permission_classes([IsAuthenticated])
 def profile_management_api(request):
     """
