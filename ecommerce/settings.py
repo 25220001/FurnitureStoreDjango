@@ -221,7 +221,6 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / "static/media"
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -238,3 +237,7 @@ EMAIL_USE_TLS='True'
 EMAIL_HOST_USER='eslammonty75@gmail.com' #the host email that sends passwords reset emails
 EMAIL_HOST_PASSWORD='gpgb gonb gcqn vpwd'
 PIP_DISABLE_PIP_VERSION_CHECK=1
+
+
+import tempfile
+MEDIA_ROOT = tempfile.gettempdir()
