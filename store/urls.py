@@ -16,5 +16,4 @@ urlpatterns = [
     path('wishlist/<int:pk>/', views.WishlistDeleteView.as_view(), name='wishlist-delete'),
 
     path('api/product-assistant-stream/', views.product_assistant_stream, name='product_assistant_stream'),
-    path('api/product-assistant/', views.product_assistant_simple, name='product_assistant_simple'),
 ]
