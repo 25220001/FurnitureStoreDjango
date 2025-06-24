@@ -133,7 +133,7 @@ from .models import Color
 
 
 # Initialize OpenAI client
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
+client = OpenAI(api_key="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")
 
 @csrf_exempt
 @require_http_methods(["POST"])
