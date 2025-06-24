@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,7 +27,8 @@ SECRET_KEY = 'django-insecure-zii+5lo(@ze6$(9=s)idbfjhck(v!kch)-t#u#9k)shy8!zom1
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.vercel.app', '127.0.0.1',".now.sh", ".funco.publicvm.com", "13.51.197.20"]
+ALLOWED_HOSTS = ['.vercel.app', '127.0.0.1',
+                 ".now.sh", ".funco.publicvm.com", "13.51.197.20"]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -54,7 +57,6 @@ REST_FRAMEWORK = {
 # Application definition
 
 # JWT Configuration
-from datetime import timedelta
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
@@ -118,17 +120,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'store',#django app
-    'cart',#django app
-    'account',#django app
-    'payment',#django app
+    'store',  # django app
+    'cart',  # django app
+    'account',  # django app
+    'payment',  # django app
     'mathfilters',
     # Third party apps
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
     'django_filters',
-    'crispy_forms', #crispy forms
+    'crispy_forms',  # crispy forms
 
 ]
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
@@ -172,14 +174,14 @@ WSGI_APPLICATION = 'ecommerce.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-  'default': {
-  'ENGINE': 'django.db.backends.postgresql_psycopg2',
-  'NAME': 'railway',
-  'USER' : 'postgres',
-  'PASSWORD' : 'KHNZTPNPtRGdYmuJuGFhyJtaqgZHEmsO',
-  'HOST' : 'gondola.proxy.rlwy.net',
-  'PORT' : '17279',
-  }
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'railway',
+        'USER': 'postgres',
+        'PASSWORD': 'KHNZTPNPtRGdYmuJuGFhyJtaqgZHEmsO',
+        'HOST': 'gondola.proxy.rlwy.net',
+        'PORT': '17279',
+    }
 }
 
 # Password validation
@@ -227,20 +229,19 @@ MEDIA_URL = '/media/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-#Email Configuration Settings:
-EMAIL_BACKEND= 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST='smtp.gmail.com'
-EMAIL_PORT='587'
-EMAIL_USE_TLS='True'
+# Email Configuration Settings:
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = '587'
+EMAIL_USE_TLS = 'True'
 
 
-EMAIL_HOST_USER='eslammonty75@gmail.com' #the host email that sends passwords reset emails
-EMAIL_HOST_PASSWORD='gpgb gonb gcqn vpwd'
-PIP_DISABLE_PIP_VERSION_CHECK=1
+# the host email that sends passwords reset emails
+EMAIL_HOST_USER = 'eslammonty75@gmail.com'
+EMAIL_HOST_PASSWORD = 'gpgb gonb gcqn vpwd'
+PIP_DISABLE_PIP_VERSION_CHECK = 1
 
 
-import tempfile
-MEDIA_ROOT = tempfile.gettempdir()
+MEDIA_ROOT = BASE_DIR / "static/media"
 
-import os
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
