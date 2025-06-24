@@ -126,6 +126,7 @@ from django.views.decorators.http import require_http_methods
 from django.conf import settings
 from django.db.models import Q
 from openai import OpenAI
+import os 
 
 
 # استيراد النماذج (تأكد من تعديل المسار حسب تطبيقك)
@@ -134,6 +135,8 @@ from .models import Color
 
 # Initialize OpenAI client
 client = OpenAI(api_key="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")
+print(os.environ.get('OPENAI_API_KEY'))
+print(settings.OPENAI_API_KEY)
 
 @csrf_exempt
 @require_http_methods(["POST"])
