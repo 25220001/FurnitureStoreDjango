@@ -243,5 +243,7 @@ PIP_DISABLE_PIP_VERSION_CHECK = 1
 
 
 MEDIA_ROOT = BASE_DIR / "static/media"
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
