@@ -192,7 +192,7 @@ def product_assistant_stream(request):
 
         # إرسال نوع الرد في البداية
         response_type = "product_search" if is_product_search else "normal_response"
-        yield f"data: {response_type}\n\n"
+        yield f"data: {{type:{response_type}}}\n\n"
 
         if is_product_search:
             # System prompt للبحث في المنتجات
