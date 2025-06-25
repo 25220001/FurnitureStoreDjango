@@ -1,3 +1,14 @@
+import os
+from .models import Color
+import logging
+from openai import OpenAI
+from django.db.models import Q
+from django.conf import settings
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse, StreamingHttpResponse
+import re
+import json
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
@@ -9,34 +20,45 @@ from .serializers import (
     ReviewSerializer, WishlistSerializer
 )
 
+
+def hello_view(request):
+    return JsonResponse({'message': 'hello'})
+
 # GET /api/products/ - List all products (replaces store view)
+
+
 class ProductListView(generics.ListAPIView):
 
-    queryset = Product.objects.all().select_related('category').prefetch_related('reviews', 'images') 
+    queryset = Product.objects.all().select_related(
+        'category').prefetch_related('reviews', 'images')
     serializer_class = ProductListSerializer
 
     permission_classes = [AllowAny]
-    
+
     def get_queryset(self):
         queryset = super().get_queryset()
         # Add filtering options
         category = self.request.query_params.get('category', None)
         search = self.request.query_params.get('search', None)
-        
+
         if category:
             queryset = queryset.filter(category__slug=category)
         if search:
             queryset = queryset.filter(name__icontains=search)
-            
+
         return queryset
 
 # GET /api/categories/ - List all categories
+
+
 class CategoryListView(generics.ListAPIView):
     queryset = Category.objects.all().prefetch_related('product')
     serializer_class = CategorySerializer
     permission_classes = [AllowAny]
 
 # GET /api/products/<slug>/ - Get specific product (replaces product_info view)
+
+
 class ProductDetailView(generics.RetrieveAPIView):
     queryset = Product.objects.all().select_related('category').prefetch_related(
         'gallery_images', 'reviews__user', 'related_products'
@@ -46,15 +68,18 @@ class ProductDetailView(generics.RetrieveAPIView):
     permission_classes = [AllowAny]
 
 # GET /api/categories/<slug>/products/ - Get products by category (replaces list_category view)
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def category_products(request, category_slug):
     category = get_object_or_404(Category, slug=category_slug)
-    products = Product.objects.filter(category=category).select_related('category').prefetch_related('reviews')
-    
+    products = Product.objects.filter(category=category).select_related(
+        'category').prefetch_related('reviews')
+
     category_data = CategorySerializer(category).data
     products_data = ProductListSerializer(products, many=True).data
-    
+
     return Response({
         'category': category_data,
         'products': products_data,
@@ -64,18 +89,20 @@ def category_products(request, category_slug):
 # Additional useful endpoints for your React app
 
 # POST /api/products/<slug>/reviews/ - Add review to product
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_product_review(request, product_slug):
     product = get_object_or_404(Product, slug=product_slug)
-    
+
     # Check if user already reviewed this product
     if Review.objects.filter(product=product, user=request.user).exists():
         return Response(
-            {'error': 'You have already reviewed this product'}, 
+            {'error': 'You have already reviewed this product'},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     serializer = ReviewSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save(product=product, user=request.user)
@@ -83,63 +110,52 @@ def add_product_review(request, product_slug):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # GET/POST /api/wishlist/ - Get user's wishlist or add to wishlist
+
+
 class WishlistView(generics.ListCreateAPIView):
     serializer_class = WishlistSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         return Wishlist.objects.filter(user=self.request.user).select_related('product')
-    
+
     def perform_create(self, serializer):
         product_id = self.request.data.get('product_id')
         product = get_object_or_404(Product, id=product_id)
-        
+
         # Check if already in wishlist
         if Wishlist.objects.filter(user=self.request.user, product=product).exists():
             return Response(
-                {'error': 'Product already in wishlist'}, 
+                {'error': 'Product already in wishlist'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         serializer.save(user=self.request.user, product=product)
 
 # DELETE /api/wishlist/<id>/ - Remove from wishlist
+
+
 class WishlistDeleteView(generics.DestroyAPIView):
     serializer_class = WishlistSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         return Wishlist.objects.filter(user=self.request.user)
-    
-
-
-
-
 
 
 # views.py
-import json
-import re
-from django.http import JsonResponse, StreamingHttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.conf import settings
-from django.db.models import Q
-from openai import OpenAI
-import os 
 
-import logging
 
 logger = logging.getLogger("3ebs")
 
 # استيراد النماذج (تأكد من تعديل المسار حسب تطبيقك)
-from .models import Color
 
 
 # Initialize OpenAI client
 client = OpenAI(api_key="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")
 logger.info(os.environ.get('OPENAI_API_KEY'))
 logger.info(settings.OPENAI_API_KEY)
+
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -154,16 +170,17 @@ def product_assistant_stream(request):
     data = json.loads(request.body)
     user_message = data.get('message', '')
     website_name = "Funco"
-    
+
     if not user_message:
         return JsonResponse({
             'error': 'الرسالة مطلوبة'
         }, status=400)
-    
+
     # الحصول على الفئات والألوان المتاحة لتحسين دقة البحث
-    available_categories = list(Category.objects.values_list('name', flat=True))
+    available_categories = list(
+        Category.objects.values_list('name', flat=True))
     available_colors = list(Color.objects.values_list('name', flat=True))
-    
+
     def generate_response():
         # try:
         # System prompt محسن مع بيانات المنتجات الفعلية
@@ -199,30 +216,31 @@ def product_assistant_stream(request):
             temperature=0.3,
             stream=True
         )
-        
+
         full_response = ""
-        
+
         # Stream the response
         for chunk in response:
             if chunk.choices[0].delta.content is not None:
                 content = chunk.choices[0].delta.content
                 full_response += content
-                
+
                 # Send chunk as SSE format
                 yield f"data: {json.dumps({'chunk': content}, ensure_ascii=False)}\n\n"
-        
+
         # تحليل الإجابة النهائية والبحث في المنتجات
         try:
             if '"product_search": true' in full_response or '"product_search":true' in full_response:
                 # استخراج JSON من الإجابة
-                json_match = re.search(r'\{.*"product_search".*\}', full_response, re.DOTALL)
+                json_match = re.search(
+                    r'\{.*"product_search".*\}', full_response, re.DOTALL)
                 if json_match:
                     json_str = json_match.group(0)
                     product_data = json.loads(json_str)
-                    
+
                     # البحث في المنتجات الفعلية
                     products_found = search_products_by_criteria(product_data)
-                    
+
                     # إرسال النتائج
                     result_data = {
                         'final_result': 'product_search',
@@ -235,29 +253,30 @@ def product_assistant_stream(request):
                     yield f"data: {json.dumps({'final_result': 'normal_response', 'message': full_response}, ensure_ascii=False)}\n\n"
             else:
                 yield f"data: {json.dumps({'final_result': 'normal_response', 'message': full_response}, ensure_ascii=False)}\n\n"
-                
+
         except json.JSONDecodeError:
             yield f"data: {json.dumps({'final_result': 'normal_response', 'message': full_response}, ensure_ascii=False)}\n\n"
-        
+
         yield "data: [DONE]\n\n"
-            
+
         # except Exception as e:
         #     error_message = f"عذراً، حدث خطأ في {website_name}. يرجى المحاولة مرة أخرى."
         #     yield f"data: {json.dumps({'error': error_message}, ensure_ascii=False)}\n\n"
-    
-    response = StreamingHttpResponse(generate_response(), content_type='text/event-stream')
+
+    response = StreamingHttpResponse(
+        generate_response(), content_type='text/event-stream')
     response['Cache-Control'] = 'no-cache'
     response['Connection'] = 'keep-alive'
     response['Access-Control-Allow-Origin'] = '*'
     response['Access-Control-Allow-Headers'] = 'Content-Type'
-    
+
     return response
-        
+
     # except json.JSONDecodeError:
     #     return JsonResponse({
     #         'error': 'بيانات JSON غير صحيحة'
     #     }, status=400)
-        
+
     # except Exception as e:
     #     return JsonResponse({
     #         'error': 'حدث خطأ في الخادم',
@@ -271,8 +290,9 @@ def search_products_by_criteria(criteria):
     """
     try:
         # بدء الاستعلام الأساسي
-        queryset = Product.objects.filter(is_active=True).select_related('category').prefetch_related('reviews', 'images')
-        
+        queryset = Product.objects.filter(is_active=True).select_related(
+            'category').prefetch_related('reviews', 'images')
+
         # البحث حسب النوع/الاسم
         if criteria.get('type'):
             product_type = criteria['type']
@@ -281,7 +301,7 @@ def search_products_by_criteria(criteria):
                 Q(description__icontains=product_type) |
                 Q(short_description__icontains=product_type)
             )
-        
+
         # البحث حسب الفئة
         if criteria.get('category'):
             category = criteria['category']
@@ -289,7 +309,7 @@ def search_products_by_criteria(criteria):
                 Q(category__name__icontains=category) |
                 Q(category__slug__icontains=category)
             )
-        
+
         # البحث حسب اللون
         if criteria.get('color') and criteria['color'] != 'أي لون':
             colors = criteria['color']
@@ -299,13 +319,14 @@ def search_products_by_criteria(criteria):
                     color_q |= Q(available_colors__name__icontains=color)
                 queryset = queryset.filter(color_q)
             else:
-                queryset = queryset.filter(available_colors__name__icontains=colors)
-        
+                queryset = queryset.filter(
+                    available_colors__name__icontains=colors)
+
         # ترتيب النتائج (المنتجات المميزة أولاً، ثم الأحدث)
         queryset = queryset.distinct().order_by('-is_featured', '-created_at')
-        
+
         products = queryset[:20]  # أول 20 منتج
-        
+
         # تحويل إلى JSON format
         products_data = []
         for product in products:
@@ -326,16 +347,16 @@ def search_products_by_criteria(criteria):
                 'colors': [color.name for color in product.available_colors.all()],
                 'short_description': product.short_description,
             }
-            
+
             # إضافة الصورة الرئيسية
             main_image = product.images.filter(is_primary=True).first()
             if main_image:
                 product_data['main_image'] = main_image.image.url
-            
+
             products_data.append(product_data)
-        
+
         return products_data
-        
+
     except Exception as e:
         return []
 
@@ -358,20 +379,20 @@ def search_products_api(request):
             'featured_only': request.GET.get('featured_only', 'false').lower() == 'true',
             'in_stock_only': request.GET.get('in_stock_only', 'true').lower() == 'true'
         }
-        
+
         # تنظيف البيانات الفارغة
         search_criteria = {k: v for k, v in search_criteria.items() if v}
-        
+
         # البحث في المنتجات
         products = search_products_advanced(search_criteria)
-        
+
         return JsonResponse({
             'success': True,
             'search_criteria': search_criteria,
             'products_found': len(products),
             'products': products
         }, json_dumps_params={'ensure_ascii': False})
-        
+
     except Exception as e:
         return JsonResponse({
             'success': False,
@@ -385,16 +406,17 @@ def search_products_advanced(criteria):
     """
     try:
         # بدء الاستعلام الأساسي
-        queryset = Product.objects.filter(is_active=True).select_related('category').prefetch_related('reviews', 'images')
-        
+        queryset = Product.objects.filter(is_active=True).select_related(
+            'category').prefetch_related('reviews', 'images')
+
         # فلترة المنتجات المتوفرة فقط
         if criteria.get('in_stock_only', True):
             queryset = queryset.filter(stock_quantity__gt=0)
-        
+
         # فلترة المنتجات المميزة فقط
         if criteria.get('featured_only'):
             queryset = queryset.filter(is_featured=True)
-        
+
         # البحث حسب النوع/الاسم
         if criteria.get('type'):
             product_type = criteria['type']
@@ -403,7 +425,7 @@ def search_products_advanced(criteria):
                 Q(description__icontains=product_type) |
                 Q(short_description__icontains=product_type)
             )
-        
+
         # البحث حسب الفئة
         if criteria.get('category'):
             category = criteria['category']
@@ -411,7 +433,7 @@ def search_products_advanced(criteria):
                 Q(category__name__icontains=category) |
                 Q(category__slug__icontains=category)
             )
-        
+
         # البحث حسب اللون
         colors = criteria.get('color')
         if colors and colors != ['أي لون']:
@@ -422,7 +444,7 @@ def search_products_advanced(criteria):
                         color_q |= Q(available_colors__name__icontains=color)
                 if color_q:
                     queryset = queryset.filter(color_q)
-        
+
         # فلترة حسب السعر
         if criteria.get('min_price'):
             try:
@@ -430,19 +452,20 @@ def search_products_advanced(criteria):
                 queryset = queryset.filter(price__gte=min_price)
             except ValueError:
                 pass
-        
+
         if criteria.get('max_price'):
             try:
                 max_price = float(criteria['max_price'])
                 queryset = queryset.filter(price__lte=max_price)
             except ValueError:
                 pass
-        
+
         # ترتيب النتائج
-        queryset = queryset.distinct().order_by('-is_featured', '-is_on_sale', '-created_at')
-        
+        queryset = queryset.distinct().order_by(
+            '-is_featured', '-is_on_sale', '-created_at')
+
         products = queryset[:20]  # أول 20 منتج
-        
+
         # تحويل إلى JSON format
         products_data = []
         for product in products:
@@ -470,7 +493,7 @@ def search_products_advanced(criteria):
                 'sku': product.sku,
                 'condition': product.condition,
             }
-            
+
             # إضافة الصورة الرئيسية
             main_image = product.images.filter(is_primary=True).first()
             if main_image and main_image.image:
@@ -482,10 +505,10 @@ def search_products_advanced(criteria):
                     product_data['main_image'] = first_image.image.url
                 else:
                     product_data['main_image'] = None
-            
+
             products_data.append(product_data)
-        
+
         return products_data
-        
+
     except Exception as e:
         return []
