@@ -232,35 +232,29 @@ def product_assistant_stream(request):
             if chunk.choices[0].delta.content is not None:
                 content = chunk.choices[0].delta.content
                 full_response += content
-                yield f"data: {json.dumps({'chunk': content}, ensure_ascii=False)}\n\n"
+                if (not is_product_search):
+                    yield f"data: {json.dumps({'chunk': content}, ensure_ascii=False)}\n\n"
 
         # معالجة النتيجة النهائية
         if is_product_search:
-            try:
-                # استخراج JSON من الإجابة
-                json_match = re.search(
-                    r'\{.*"product_search".*\}', full_response, re.DOTALL)
-                if json_match:
-                    json_str = json_match.group(0)
-                    product_data = json.loads(json_str)
+            # استخراج JSON من الإجابة
+            json_match = re.search(
+                r'\{.*"product_search".*\}', full_response, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(0)
+                product_data = json.loads(json_str)
 
-                    # البحث في المنتجات الفعلية
-                    products_found = search_products_by_criteria(product_data)
+                # البحث في المنتجات الفعلية
+                products_found = search_products_by_criteria(product_data)
 
-                    # إرسال النتائج
-                    result_data = {
-                        'final_result': 'product_search',
-                        'search_criteria': product_data,
-                        'products_found': len(products_found),
-                        'products': products_found[:10]
-                    }
-                    yield f"data: {json.dumps(result_data, ensure_ascii=False)}\n\n"
-                else:
-                    yield f"data: {json.dumps({'final_result': 'normal_response', 'message': full_response}, ensure_ascii=False)}\n\n"
-            except json.JSONDecodeError:
-                yield f"data: {json.dumps({'final_result': 'normal_response', 'message': full_response}, ensure_ascii=False)}\n\n"
-        else:
-            yield f"data: {json.dumps({'final_result': 'normal_response', 'message': full_response}, ensure_ascii=False)}\n\n"
+                # إرسال النتائج
+                result_data = {
+                    'final_result': 'product_search',
+                    'search_criteria': product_data,
+                    'products_found': len(products_found),
+                    'products': products_found[:10]
+                }
+                yield f"data: {json.dumps(result_data, ensure_ascii=False)}\n\n"
 
         yield "data: [DONE]\n\n"
 
