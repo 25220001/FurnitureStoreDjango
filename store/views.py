@@ -154,7 +154,6 @@ def product_assistant_stream(request):
     إذا كان يحتاج منتج: يرجع JSON format مع TYPE و COLOR ويبحث في المنتجات
     إذا لم يكن يحتاج: يرجع رد طبيعي من الموقع
     """
-    # try:
     # Parse request data
     data = json.loads(request.body)
     user_message = data.get('message', '')
@@ -171,36 +170,56 @@ def product_assistant_stream(request):
     available_colors = list(Color.objects.values_list('name', flat=True))
 
     def generate_response():
-        # try:
-        # System prompt محسن مع بيانات المنتجات الفعلية
-        analysis_prompt = f"""
+        # الحل الأول: تحليل مبدئي لتحديد نوع الرد
+        pre_analysis_prompt = f"""
+تحليل سريع: هل هذه الرسالة تبحث عن منتج؟
+رسالة المستخدم: "{user_message}"
+
+أجب بكلمة واحدة فقط:
+- "منتج" إذا كان يبحث عن أثاث أو ديكور أو مفروشات
+- "عادي" إذا كان سؤال عام أو محادثة عادية
+"""
+
+        # تحليل مبدئي سريع
+        pre_response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "system", "content": pre_analysis_prompt}],
+            max_tokens=10,
+            temperature=0.1
+        )
+
+        is_product_search = "منتج" in pre_response.choices[0].message.content
+
+        # إرسال نوع الرد في البداية
+        response_type = "product_search" if is_product_search else "normal_response"
+        yield f"data: {json.dumps({'response_type': response_type}, ensure_ascii=False)}\n\n"
+
+        if is_product_search:
+            # System prompt للبحث في المنتجات
+            analysis_prompt = f"""
 أنت مساعد ذكي لموقع {website_name} للأثاث والمفروشات.
 
 الفئات المتاحة: {', '.join(available_categories)}
 الألوان المتاحة: {', '.join(available_colors)}
 
-مهمتك تحليل رسالة المستخدم وتحديد إذا كان:
-1. يبحث عن منتج معين (أثاث، مفروشات، ديكور، إلخ)
-2. يسأل سؤال عام أو يتحدث بشكل طبيعي
+المستخدم يبحث عن منتج. أرجع JSON format فقط بهذا الشكل:
+{{"product_search": true, "type": "نوع المنتج", "color": "اللون", "category": "الفئة"}}
 
-إذا كان المستخدم يبحث عن منتج:
-- أرجع JSON format فقط بهذا الشكل: {{"product_search": true, "type": "نوع المنتج", "color": "اللون أو قائمة الألوان", "category": "الفئة إن وجدت"}}
-- TYPE يجب أن يكون من الفئات المتاحة أو وصف دقيق للمنتج
-- COLOR يجب أن يكون من الألوان المتاحة أو "أي لون" إذا لم يحدد
-- CATEGORY يجب أن يكون من الفئات المتاحة
-
-إذا كان المستخدم لا يبحث عن منتج:
-- أرجع رد طبيعي ومفيد باسم موقع {website_name}
+رسالة المستخدم: "{user_message}"
+"""
+        else:
+            # System prompt للرد العادي
+            analysis_prompt = f"""
+أنت مساعد ودود لموقع {website_name} للأثاث والمفروشات.
+المستخدم لا يبحث عن منتج معين، لذا أرجع رد طبيعي ومفيد.
 
 رسالة المستخدم: "{user_message}"
 """
 
-        # استدعاء ChatGPT للتحليل
+        # استدعاء ChatGPT للرد الأساسي
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": analysis_prompt}
-            ],
+            messages=[{"role": "system", "content": analysis_prompt}],
             max_tokens=300,
             temperature=0.3,
             stream=True
@@ -213,13 +232,11 @@ def product_assistant_stream(request):
             if chunk.choices[0].delta.content is not None:
                 content = chunk.choices[0].delta.content
                 full_response += content
-
-                # Send chunk as SSE format
                 yield f"data: {json.dumps({'chunk': content}, ensure_ascii=False)}\n\n"
 
-        # تحليل الإجابة النهائية والبحث في المنتجات
-        try:
-            if '"product_search": true' in full_response or '"product_search":true' in full_response:
+        # معالجة النتيجة النهائية
+        if is_product_search:
+            try:
                 # استخراج JSON من الإجابة
                 json_match = re.search(
                     r'\{.*"product_search".*\}', full_response, re.DOTALL)
@@ -235,22 +252,17 @@ def product_assistant_stream(request):
                         'final_result': 'product_search',
                         'search_criteria': product_data,
                         'products_found': len(products_found),
-                        'products': products_found[:10]  # أول 10 منتجات
+                        'products': products_found[:10]
                     }
                     yield f"data: {json.dumps(result_data, ensure_ascii=False)}\n\n"
                 else:
                     yield f"data: {json.dumps({'final_result': 'normal_response', 'message': full_response}, ensure_ascii=False)}\n\n"
-            else:
+            except json.JSONDecodeError:
                 yield f"data: {json.dumps({'final_result': 'normal_response', 'message': full_response}, ensure_ascii=False)}\n\n"
-
-        except json.JSONDecodeError:
+        else:
             yield f"data: {json.dumps({'final_result': 'normal_response', 'message': full_response}, ensure_ascii=False)}\n\n"
 
         yield "data: [DONE]\n\n"
-
-        # except Exception as e:
-        #     error_message = f"عذراً، حدث خطأ في {website_name}. يرجى المحاولة مرة أخرى."
-        #     yield f"data: {json.dumps({'error': error_message}, ensure_ascii=False)}\n\n"
 
     response = StreamingHttpResponse(
         generate_response(), content_type='text/event-stream')
@@ -260,17 +272,6 @@ def product_assistant_stream(request):
     response['Access-Control-Allow-Headers'] = 'Content-Type'
 
     return response
-
-    # except json.JSONDecodeError:
-    #     return JsonResponse({
-    #         'error': 'بيانات JSON غير صحيحة'
-    #     }, status=400)
-
-    # except Exception as e:
-    #     return JsonResponse({
-    #         'error': 'حدث خطأ في الخادم',
-    #         'details': str(e)
-    #     }, status=500)
 
 
 def search_products_by_criteria(criteria):
