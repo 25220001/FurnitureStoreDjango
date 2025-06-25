@@ -143,18 +143,7 @@ class WishlistDeleteView(generics.DestroyAPIView):
         return Wishlist.objects.filter(user=self.request.user)
 
 
-# views.py
-
-
-logger = logging.getLogger("3ebs")
-
-# استيراد النماذج (تأكد من تعديل المسار حسب تطبيقك)
-
-
-# Initialize OpenAI client
-client = OpenAI(api_key="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")
-logger.info(os.environ.get('OPENAI_API_KEY'))
-logger.info(settings.OPENAI_API_KEY)
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 @csrf_exempt
