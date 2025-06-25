@@ -30,6 +30,8 @@ DEBUG = True
 ALLOWED_HOSTS = ['.vercel.app', '127.0.0.1',
                  ".now.sh", "funco.publicvm.com", "13.51.197.20"]
 
+CSRF_TRUSTED_ORIGINS = ["https://funco.publicvm.com"]
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
