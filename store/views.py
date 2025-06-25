@@ -256,7 +256,7 @@ def product_assistant_stream(request):
                 }
                 yield f"data: {json.dumps(result_data, ensure_ascii=False)}\n\n"
 
-        yield "data: [DONE]\n\n"
+        yield f'data: {{"system":"closed"}}\n\n'
 
     response = StreamingHttpResponse(
         generate_response(), content_type='text/event-stream')
