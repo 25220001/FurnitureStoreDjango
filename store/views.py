@@ -282,32 +282,27 @@ def product_assistant_stream(request):
             print("full_response " + full_response)
             print("full_response " + str(json.loads(full_response)))
 
-            json_match = re.search(
-                r'\{.*"product_search".*\}', full_response, re.DOTALL)
-            print("json_match " + str(json_match))
-            if json_match:
-                json_str = json_match.group(0)
-                product_data = json.loads(json_str)
+            product_data = json.loads(full_response)
 
-                # البحث في المنتجات الفعلية
-                products_found = search_products_by_criteria(product_data)
-                print("json_match " + str(products_found))
+            # البحث في المنتجات الفعلية
+            products_found = search_products_by_criteria(product_data)
+            print("json_match " + str(products_found))
 
-                # إرسال النتائج
-                result_data = {
-                    'final_result': 'product_search',
-                    'message': product_data.get('message', ''),
-                    'search_criteria': product_data,
-                    'products_found': len(products_found),
-                    'products': products_found[:10]
-                }
-                yield f"data: {json.dumps(result_data, ensure_ascii=False)}\n\n"
-                save_chat_history(
-                    session_id,
-                    user_message,
-                    f"بحث منتج: {product_data}",
-                    'product_search',
-                )
+            # إرسال النتائج
+            result_data = {
+                'final_result': 'product_search',
+                'message': product_data.get('message', ''),
+                'search_criteria': product_data,
+                'products_found': len(products_found),
+                'products': products_found[:10]
+            }
+            yield f"data: {json.dumps(result_data, ensure_ascii=False)}\n\n"
+            save_chat_history(
+                session_id,
+                user_message,
+                f"بحث منتج: {product_data}",
+                'product_search',
+            )
 
         else:
             save_chat_history(session_id, user_message,
