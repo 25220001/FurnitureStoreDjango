@@ -366,77 +366,87 @@ def search_products_by_criteria(criteria):
     """
     دالة للبحث في المنتجات حسب المعايير المحددة
     """
-    try:
-        # بدء الاستعلام الأساسي
-        queryset = Product.objects.filter(is_active=True).select_related(
-            'category').prefetch_related('reviews', 'images')
+    # try:
+    # بدء الاستعلام الأساسي
+    queryset = Product.objects.filter(is_active=True).select_related(
+        'category').prefetch_related('reviews', 'images')
 
-        # البحث حسب النوع/الاسم
-        if criteria.get('type'):
-            product_type = criteria['type']
+    print("search_products_by_criteria " + str(criteria))
+
+    # البحث حسب النوع/الاسم
+    if criteria.get('type'):
+        product_type = criteria['type']
+        queryset = queryset.filter(
+            Q(name__icontains=product_type) |
+            Q(description__icontains=product_type) |
+            Q(short_description__icontains=product_type)
+        )
+
+    print("search_products_by_criteria " + str(queryset))
+
+    # البحث حسب الفئة
+    if criteria.get('category'):
+        category = criteria['category']
+        queryset = queryset.filter(
+            Q(category__name__icontains=category) |
+            Q(category__slug__icontains=category)
+        )
+
+    print("search_products_by_criteria " + str(queryset))
+
+    # البحث حسب اللون
+    if criteria.get('color') and criteria['color'] != 'أي لون':
+        colors = criteria['color']
+        if isinstance(colors, list):
+            color_q = Q()
+            for color in colors:
+                color_q |= Q(available_colors__name__icontains=color)
+            queryset = queryset.filter(color_q)
+        else:
             queryset = queryset.filter(
-                Q(name__icontains=product_type) |
-                Q(description__icontains=product_type) |
-                Q(short_description__icontains=product_type)
-            )
+                available_colors__name__icontains=colors)
 
-        # البحث حسب الفئة
-        if criteria.get('category'):
-            category = criteria['category']
-            queryset = queryset.filter(
-                Q(category__name__icontains=category) |
-                Q(category__slug__icontains=category)
-            )
+    print("search_products_by_criteria " + str(queryset))
 
-        # البحث حسب اللون
-        if criteria.get('color') and criteria['color'] != 'أي لون':
-            colors = criteria['color']
-            if isinstance(colors, list):
-                color_q = Q()
-                for color in colors:
-                    color_q |= Q(available_colors__name__icontains=color)
-                queryset = queryset.filter(color_q)
-            else:
-                queryset = queryset.filter(
-                    available_colors__name__icontains=colors)
+    # ترتيب النتائج (المنتجات المميزة أولاً، ثم الأحدث)
+    queryset = queryset.distinct().order_by('-is_featured', '-created_at')
 
-        # ترتيب النتائج (المنتجات المميزة أولاً، ثم الأحدث)
-        queryset = queryset.distinct().order_by('-is_featured', '-created_at')
+    print("search_products_by_criteria " + str(queryset))
 
-        products = queryset[:20]  # أول 20 منتج
+    products = queryset[:20]  # أول 20 منتج
 
-        # تحويل إلى JSON format
-        products_data = []
-        for product in products:
-            product_data = {
-                'id': product.id,
-                'name': product.name,
-                'slug': product.slug,
-                'price': float(product.price),
-                'sale_price': float(product.sale_price) if product.sale_price else None,
-                'effective_price': float(product.effective_price),
-                'discount_percentage': product.discount_percentage,
-                'category': product.category.name if product.category else None,
-                'is_featured': product.is_featured,
-                'is_on_sale': product.is_on_sale,
-                'is_in_stock': product.is_in_stock,
-                'average_rating': product.average_rating,
-                'review_count': product.review_count,
-                'colors': [color.name for color in product.available_colors.all()],
-                'short_description': product.short_description,
-            }
+    # تحويل إلى JSON format
+    products_data = []
+    for product in products:
+        product_data = {
+            'id': product.id,
+            'name': product.name,
+            'slug': product.slug,
+            'price': float(product.price),
+            'sale_price': float(product.sale_price) if product.sale_price else None,
+            'effective_price': float(product.effective_price),
+            'discount_percentage': product.discount_percentage,
+            'category': product.category.name if product.category else None,
+            'is_featured': product.is_featured,
+            'is_on_sale': product.is_on_sale,
+            'is_in_stock': product.is_in_stock,
+            'average_rating': product.average_rating,
+            'review_count': product.review_count,
+            'colors': [color.name for color in product.available_colors.all()],
+            'short_description': product.short_description,
+        }
 
-            # إضافة الصورة الرئيسية
-            main_image = product.images.filter(is_primary=True).first()
-            if main_image:
-                product_data['main_image'] = main_image.image.url
+        # إضافة الصورة الرئيسية
+        main_image = product.images.filter(is_primary=True).first()
+        if main_image:
+            product_data['main_image'] = main_image.image.url
 
-            products_data.append(product_data)
+        products_data.append(product_data)
 
-        return products_data
+    return products_data
 
-    except Exception as e:
-        return []
+    # except Exception as e:
+    #     return []
 
 
 # API endpoint منفصل للبحث المباشر في المنتجات
