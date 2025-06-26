@@ -14,11 +14,12 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
-from .models import Category, Product, Review, Wishlist
+from .models import Category, Product, Review, Wishlist, ChatHistory
 from .serializers import (
     CategorySerializer, ProductListSerializer, ProductDetailSerializer,
     ReviewSerializer, WishlistSerializer
 )
+from django.utils import timezone
 
 
 def hello_view(request):
@@ -146,17 +147,47 @@ class WishlistDeleteView(generics.DestroyAPIView):
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
+def get_chat_history(session_id, limit=5):
+    """جلب تاريخ المحادثة للسياق"""
+    history = ChatHistory.objects.filter(
+        session_id=session_id
+    ).order_by('-created_at')[:limit]
+
+    context = []
+    for chat in reversed(history):  # عكس الترتيب للحصول على الترتيب الصحيح
+        context.append({
+            'role': 'user',
+            'content': chat.user_message
+        })
+        context.append({
+            'role': 'assistant',
+            'content': chat.assistant_response
+        })
+
+    return context
+
+
+def save_chat_history(session_id, user_message, assistant_response, message_type):
+    """حفظ المحادثة في قاعدة البيانات"""
+    ChatHistory.objects.create(
+        session_id=session_id,
+        user_message=user_message,
+        assistant_response=assistant_response,
+        message_type=message_type,
+    )
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def product_assistant_stream(request):
     """
-    Endpoint يحلل رسالة المستخدم ويحدد إذا كان يحتاج منتج أم لا
-    إذا كان يحتاج منتج: يرجع JSON format مع TYPE و COLOR ويبحث في المنتجات
-    إذا لم يكن يحتاج: يرجع رد طبيعي من الموقع
+    Endpoint محسن يحلل رسالة المستخدم مع الذاكرة ودعم متعدد اللغات
     """
     # Parse request data
     data = json.loads(request.body)
     user_message = data.get('message', '')
+    session_id = data.get(
+        'session_id', f"session_{timezone.now().timestamp()}")
     website_name = "Funco"
 
     if not user_message:
@@ -164,15 +195,24 @@ def product_assistant_stream(request):
             'error': 'الرسالة مطلوبة'
         }, status=400)
 
-    # الحصول على الفئات والألوان المتاحة لتحسين دقة البحث
+    # الحصول على تاريخ المحادثة
+    chat_context = get_chat_history(session_id)
+
+    # الحصول على الفئات والألوان المتاحة
     available_categories = list(
         Category.objects.values_list('name', flat=True))
     available_colors = list(Color.objects.values_list('name', flat=True))
 
     def generate_response():
+        # إعداد السياق مع التاريخ
+        context_messages = chat_context + [
+            {"role": "user", "content": user_message}
+        ]
+
         # الحل الأول: تحليل مبدئي لتحديد نوع الرد
         pre_analysis_prompt = f"""
 تحليل سريع: هل هذه الرسالة تبحث عن منتج؟
+السياق السابق متاح للمساعدة في الفهم.
 رسالة المستخدم: "{user_message}"
 
 أجب بكلمة واحدة فقط:
@@ -183,7 +223,8 @@ def product_assistant_stream(request):
         # تحليل مبدئي سريع
         pre_response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": pre_analysis_prompt}],
+            messages=[{"role": "system", "content": pre_analysis_prompt}
+                      ] + context_messages[-3:],  # آخر 3 رسائل للسياق
             max_tokens=10,
             temperature=0.1
         )
@@ -202,24 +243,23 @@ def product_assistant_stream(request):
 الفئات المتاحة: {', '.join(available_categories)}
 الألوان المتاحة: {', '.join(available_colors)}
 
-المستخدم يبحث عن منتج. أرجع JSON format فقط بهذا الشكل:
-{{"product_search": true, "type": "نوع المنتج", "color": "اللون", "category": "الفئة"}}
-
-رسالة المستخدم: "{user_message}"
+المستخدم يبحث عن منتج. استخدم السياق السابق للمحادثة لفهم أفضل.
+أرجع JSON format فقط بهذا الشكل:
+{{"product_search": true, "message": "رساله اضافيه", "type": "نوع المنتج", "color": "اللون", "category": "الفئة"}}
 """
         else:
             # System prompt للرد العادي
             analysis_prompt = f"""
 أنت مساعد ودود لموقع {website_name} للأثاث والمفروشات.
-المستخدم لا يبحث عن منتج معين، لذا أرجع رد طبيعي ومفيد.
-
-رسالة المستخدم: "{user_message}"
+المستخدم لا يبحث عن منتج معين، لذا رد بشكل طبيعي ومفيد.
+استخدم السياق السابق للمحادثة لتقديم رد متسق ومناسب.
 """
 
-        # استدعاء ChatGPT للرد الأساسي
+        # استدعاء ChatGPT للرد الأساسي مع السياق
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": analysis_prompt}],
+            messages=[{"role": "system", "content": analysis_prompt}
+                      ] + context_messages,
             max_tokens=300,
             temperature=0.3,
             stream=True
@@ -250,12 +290,22 @@ def product_assistant_stream(request):
                 # إرسال النتائج
                 result_data = {
                     'final_result': 'product_search',
+                    'message': product_data.get('message', ''),
                     'search_criteria': product_data,
                     'products_found': len(products_found),
                     'products': products_found[:10]
                 }
                 yield f"data: {json.dumps(result_data, ensure_ascii=False)}\n\n"
+                save_chat_history(
+                    session_id,
+                    user_message,
+                    f"بحث منتج: {product_data}",
+                    'product_search',
+                )
 
+        else:
+            save_chat_history(session_id, user_message,
+                              full_response, 'normal_response', 'ar')
         yield f'data: {{"system":"closed"}}\n\n'
 
     response = StreamingHttpResponse(
@@ -266,6 +316,49 @@ def product_assistant_stream(request):
     response['Access-Control-Allow-Headers'] = 'Content-Type'
 
     return response
+
+# إضافة endpoint لجلب تاريخ المحادثة
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_chat_history_endpoint(request):
+    """جلب تاريخ المحادثة لجلسة معينة"""
+    session_id = request.GET.get('session_id')
+    if not session_id:
+        return JsonResponse({'error': 'session_id مطلوب'}, status=400)
+
+    history = ChatHistory.objects.filter(
+        session_id=session_id
+    ).order_by('created_at').values(
+        'user_message',
+        'assistant_response',
+        'message_type',
+        'created_at'
+    )
+
+    return JsonResponse({'history': list(history)})
+
+# إضافة endpoint لمسح تاريخ المحادثة
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def clear_chat_history(request):
+    """مسح تاريخ المحادثة لجلسة معينة"""
+    data = json.loads(request.body)
+    session_id = data.get('session_id')
+
+    if not session_id:
+        return JsonResponse({'error': 'session_id مطلوب'}, status=400)
+
+    deleted_count = ChatHistory.objects.filter(
+        session_id=session_id).delete()[0]
+
+    return JsonResponse({
+        'success': True,
+        'deleted_messages': deleted_count
+    })
 
 
 def search_products_by_criteria(criteria):

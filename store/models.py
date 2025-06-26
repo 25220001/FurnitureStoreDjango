@@ -8,7 +8,7 @@ from django.utils import timezone
 
 class TimeStampedModel(models.Model):
     """Abstract base model with timestamp fields"""
-    
+
     created_at = models.DateTimeField(default=timezone.now)
 
     updated_at = models.DateTimeField(default=timezone.now)
@@ -25,7 +25,8 @@ class Category(TimeStampedModel):
     image = models.ImageField(upload_to='categories/', blank=True, null=True)
     is_active = models.BooleanField(default=True)
     # Parent category for hierarchical structure
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
 
     class Meta:
         verbose_name_plural = 'Categories'
@@ -70,7 +71,8 @@ class Material(models.Model):
 class Color(models.Model):
     """Color model for furniture colors"""
     name = models.CharField(max_length=50, unique=True)
-    hex_code = models.CharField(max_length=7, blank=True, help_text="Hex color code (e.g., #FF5733)")
+    hex_code = models.CharField(
+        max_length=7, blank=True, help_text="Hex color code (e.g., #FF5733)")
 
     def __str__(self):
         return self.name
@@ -78,7 +80,8 @@ class Color(models.Model):
 
 class Size(models.Model):
     """Size model for furniture sizes"""
-    name = models.CharField(max_length=50, unique=True)  # e.g., Small, Medium, Large, XL
+    name = models.CharField(
+        max_length=50, unique=True)  # e.g., Small, Medium, Large, XL
     description = models.CharField(max_length=100, blank=True)
     # Add ordering for proper size sequence
     order = models.PositiveIntegerField(default=0)
@@ -99,7 +102,8 @@ class Store(TimeStampedModel):
     email = models.EmailField(blank=True)
     is_active = models.BooleanField(default=True)
     # Add operating hours
-    opening_hours = models.CharField(max_length=200, blank=True, help_text="e.g., Mon-Fri: 9AM-9PM")
+    opening_hours = models.CharField(
+        max_length=200, blank=True, help_text="e.g., Mon-Fri: 9AM-9PM")
 
     def __str__(self):
         return f"{self.name} - {self.city}"
@@ -113,13 +117,16 @@ class UserProfile(TimeStampedModel):
         ('other', 'Other'),
         ('prefer_not_to_say', 'Prefer not to say'),
     ]
-    
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='profile')
     phone_number = models.CharField(max_length=20, blank=True)
     date_of_birth = models.DateField(blank=True, null=True)
-    gender = models.CharField(max_length=20, choices=GENDER_CHOICES, blank=True)
+    gender = models.CharField(
+        max_length=20, choices=GENDER_CHOICES, blank=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
-    preferred_store = models.ForeignKey(Store, on_delete=models.SET_NULL, null=True, blank=True)
+    preferred_store = models.ForeignKey(
+        Store, on_delete=models.SET_NULL, null=True, blank=True)
     newsletter_subscribed = models.BooleanField(default=False)
 
     def __str__(self):
@@ -137,8 +144,9 @@ class Address(TimeStampedModel):
         ('billing', 'Billing'),
         ('both', 'Both'),
     ]
-    
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses')
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='addresses')
     full_name = models.CharField(max_length=100)
     address_line_1 = models.CharField(max_length=200)
     address_line_2 = models.CharField(max_length=200, blank=True)
@@ -147,7 +155,8 @@ class Address(TimeStampedModel):
     city = models.CharField(max_length=50)
     postal_code = models.CharField(max_length=10, blank=True)
     phone_number = models.CharField(max_length=20, blank=True)
-    address_type = models.CharField(max_length=20, choices=ADDRESS_TYPES, default='both')
+    address_type = models.CharField(
+        max_length=20, choices=ADDRESS_TYPES, default='both')
     is_default = models.BooleanField(default=False)
 
     class Meta:
@@ -168,7 +177,7 @@ class Address(TimeStampedModel):
         if self.is_default:
             # Ensure only one default address per type
             Address.objects.filter(
-                user=self.user, 
+                user=self.user,
                 address_type=self.address_type,
                 is_default=True
             ).exclude(pk=self.pk).update(is_default=False)
@@ -187,41 +196,52 @@ class Product(TimeStampedModel):
     slug = models.SlugField(max_length=200, unique=True)
     description = models.TextField()
     short_description = models.CharField(max_length=300, blank=True)
-    
+
     # Relationships
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
-    brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True)
+    category = models.ForeignKey(
+        Category, on_delete=models.CASCADE, related_name='products')
+    brand = models.ForeignKey(
+        Brand, on_delete=models.SET_NULL, null=True, blank=True)
     materials = models.ManyToManyField(Material, blank=True)
-    available_colors = models.ManyToManyField(Color, blank=True, related_name='products')
-    available_sizes = models.ManyToManyField(Size, blank=True, related_name='products')
-    
+    available_colors = models.ManyToManyField(
+        Color, blank=True, related_name='products')
+    available_sizes = models.ManyToManyField(
+        Size, blank=True, related_name='products')
+
     # Pricing
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    sale_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    cost_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    
+    sale_price = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True)
+    cost_price = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True)
+
     # Product details
-    sku = models.CharField(max_length=100,unique=True)
-    weight = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True, help_text="Weight in kg")
-    dimensions_length = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True, help_text="Length in cm")
-    dimensions_width = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True, help_text="Width in cm")
-    dimensions_height = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True, help_text="Height in cm")
-    
+    sku = models.CharField(max_length=100, unique=True)
+    weight = models.DecimalField(
+        max_digits=8, decimal_places=2, blank=True, null=True, help_text="Weight in kg")
+    dimensions_length = models.DecimalField(
+        max_digits=8, decimal_places=2, blank=True, null=True, help_text="Length in cm")
+    dimensions_width = models.DecimalField(
+        max_digits=8, decimal_places=2, blank=True, null=True, help_text="Width in cm")
+    dimensions_height = models.DecimalField(
+        max_digits=8, decimal_places=2, blank=True, null=True, help_text="Height in cm")
+
     # Inventory
     stock_quantity = models.PositiveIntegerField(default=0)
     low_stock_threshold = models.PositiveIntegerField(default=5)
-    condition = models.CharField(max_length=20, choices=CONDITION_CHOICES, default='new')
-    
+    condition = models.CharField(
+        max_length=20, choices=CONDITION_CHOICES, default='new')
+
     # Status
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
     is_on_sale = models.BooleanField(default=False)
     is_best_seller = models.BooleanField(default=False)
-    
+
     # SEO
     meta_title = models.CharField(max_length=200, blank=True)
     meta_description = models.CharField(max_length=300, blank=True)
-    
+
     # Additional fields for better inventory management
     min_order_quantity = models.PositiveIntegerField(default=1)
     max_order_quantity = models.PositiveIntegerField(blank=True, null=True)
@@ -286,7 +306,8 @@ class Product(TimeStampedModel):
 
 class ProductImage(TimeStampedModel):
     """Product images model"""
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='products/')
     alt_text = models.CharField(max_length=200, blank=True)
     is_primary = models.BooleanField(default=False)
@@ -310,7 +331,7 @@ class ProductImage(TimeStampedModel):
         if self.is_primary:
             # Ensure only one primary image per product
             ProductImage.objects.filter(
-                product=self.product, 
+                product=self.product,
                 is_primary=True
             ).exclude(pk=self.pk).update(is_primary=False)
         super().save(*args, **kwargs)
@@ -318,11 +339,16 @@ class ProductImage(TimeStampedModel):
 
 class ProductVariant(models.Model):
     """Product variants for different colors and sizes"""
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
-    color = models.ForeignKey(Color, on_delete=models.CASCADE, null=True, blank=True)
-    size = models.ForeignKey(Size, on_delete=models.CASCADE, null=True, blank=True)
-    sku = models.CharField(max_length=50 , unique=True)  # Make variant SKU unique
-    price_adjustment = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='variants')
+    color = models.ForeignKey(
+        Color, on_delete=models.CASCADE, null=True, blank=True)
+    size = models.ForeignKey(
+        Size, on_delete=models.CASCADE, null=True, blank=True)
+    # Make variant SKU unique
+    sku = models.CharField(max_length=50, unique=True)
+    price_adjustment = models.DecimalField(
+        max_digits=8, decimal_places=2, default=0)
     stock_quantity = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
@@ -349,9 +375,11 @@ class ProductVariant(models.Model):
 
 class Review(TimeStampedModel):
     """Product reviews model"""
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='reviews')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    rating = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)])
     title = models.CharField(max_length=200, blank=True)
     comment = models.TextField()
     is_verified_purchase = models.BooleanField(default=False)
@@ -381,11 +409,13 @@ class Wishlist(models.Model):
 
 class SavedDesign(TimeStampedModel):
     """Saved designs/room layouts model"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_designs')
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='saved_designs')
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     design_data = models.JSONField()  # Store design configuration
-    thumbnail = models.ImageField(upload_to='saved_designs/', blank=True, null=True)
+    thumbnail = models.ImageField(
+        upload_to='saved_designs/', blank=True, null=True)
     is_public = models.BooleanField(default=False)
 
     class Meta:
@@ -441,7 +471,8 @@ class ShippingZone(models.Model):
     name = models.CharField(max_length=100)
     governorates = models.JSONField()  # List of governorates covered
     shipping_cost = models.DecimalField(max_digits=8, decimal_places=2)
-    free_shipping_threshold = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    free_shipping_threshold = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True)
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
@@ -454,12 +485,14 @@ class Coupon(TimeStampedModel):
         ('percentage', 'Percentage'),
         ('fixed', 'Fixed Amount'),
     ]
-    
+
     code = models.CharField(max_length=50, unique=True)
     discount_type = models.CharField(max_length=20, choices=DISCOUNT_TYPES)
     discount_value = models.DecimalField(max_digits=8, decimal_places=2)
-    min_order_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    max_discount_amount = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    min_order_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True)
+    max_discount_amount = models.DecimalField(
+        max_digits=8, decimal_places=2, null=True, blank=True)
     usage_limit = models.PositiveIntegerField(null=True, blank=True)
     used_count = models.PositiveIntegerField(default=0)
     valid_from = models.DateTimeField()
@@ -475,3 +508,17 @@ class Coupon(TimeStampedModel):
         return self.is_active and self.valid_from <= now <= self.valid_until and (
             self.usage_limit is None or self.used_count < self.usage_limit
         )
+
+
+class ChatHistory(models.Model):
+    session_id = models.CharField(max_length=100)  # معرف الجلسة
+    user_message = models.TextField()
+    assistant_response = models.TextField()
+    message_type = models.CharField(max_length=20, choices=[
+        ('product_search', 'بحث منتج'),
+        ('normal_response', 'رد عادي')
+    ])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
