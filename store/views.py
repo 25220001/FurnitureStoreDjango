@@ -387,6 +387,12 @@ def search_products_by_criteria(criteria):
     # البحث حسب الفئة
     if criteria.get('category'):
         category = criteria['category']
+        print("category " + str(category))
+        print("category " + str(queryset[0]))
+        print("category " + str(queryset[0].category))
+        print("category " + str(queryset[0].category.name))
+        print("category " + str(queryset[0].category.slug))
+
         queryset = queryset.filter(
             Q(category__name__icontains=category) |
             Q(category__slug__icontains=category)
