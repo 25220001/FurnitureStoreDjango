@@ -390,28 +390,14 @@ def search_products_by_criteria(criteria):
     # البحث حسب الفئة
     if criteria.get('category'):
         category = criteria['category']
-        print("category " + str(category))
-        print("category " + str(queryset[0]))
-        print("category " + str(queryset[0].category))
-        print("category " + str(queryset[0].category.name))
-        print("category " + str(queryset[0].category.slug))
-
         queryset = queryset.filter(
             Q(category__name__icontains=category) |
             Q(category__slug__icontains=category)
         )
 
-    print("search_products_by_criteria " + str(queryset))
-
     # البحث حسب اللون
     if criteria.get('color') and criteria['color'] != 'أي لون':
         colors = criteria['color']
-        print("colors " + str(colors))
-        print("colors " + str(queryset))
-        print("colors " + str(queryset[0]))
-        print("colors " + str(queryset[0].available_colors))
-        print("colors " + str(queryset[0].available_colors.all()))
-        print("colors " + str(queryset[0].available_colors.all().name))
         if isinstance(colors, list):
             color_q = Q()
             for color in colors:
