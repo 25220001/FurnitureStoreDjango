@@ -305,7 +305,7 @@ def product_assistant_stream(request):
 
         else:
             save_chat_history(session_id, user_message,
-                              full_response, 'normal_response', 'ar')
+                              full_response, 'normal_response')
         yield f'data: {{"system":"closed"}}\n\n'
 
     response = StreamingHttpResponse(
