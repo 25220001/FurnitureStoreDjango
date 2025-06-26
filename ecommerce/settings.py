@@ -100,6 +100,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8080",  # Vue.js default port
     "http://127.0.0.1:8080",
+    "https://funco.publicvm.com"
     # Add your frontend domain here
 ]
 
