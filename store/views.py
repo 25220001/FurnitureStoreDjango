@@ -281,14 +281,17 @@ def product_assistant_stream(request):
             # استخراج JSON من الإجابة
             print("full_response " + full_response)
             print("full_response " + str(json.loads(full_response)))
+
             json_match = re.search(
                 r'\{.*"product_search".*\}', full_response, re.DOTALL)
+            print("json_match " + str(json_match))
             if json_match:
                 json_str = json_match.group(0)
                 product_data = json.loads(json_str)
 
                 # البحث في المنتجات الفعلية
                 products_found = search_products_by_criteria(product_data)
+                print("json_match " + str(products_found))
 
                 # إرسال النتائج
                 result_data = {
