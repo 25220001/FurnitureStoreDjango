@@ -407,7 +407,11 @@ def search_products_by_criteria(criteria):
     if criteria.get('color') and criteria['color'] != 'أي لون':
         colors = criteria['color']
         print("colors " + str(colors))
+        print("colors " + str(queryset))
+        print("colors " + str(queryset[0]))
+        print("colors " + str(queryset[0].available_colors))
         print("colors " + str(queryset[0].available_colors.all()))
+        print("colors " + str(queryset[0].available_colors.all().name))
         if isinstance(colors, list):
             color_q = Q()
             for color in colors:
