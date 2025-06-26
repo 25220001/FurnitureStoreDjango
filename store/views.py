@@ -280,9 +280,9 @@ def product_assistant_stream(request):
         if is_product_search:
             # استخراج JSON من الإجابة
             print("full_response " + full_response)
+            print("full_response " + str(json.loads(full_response)))
             json_match = re.search(
                 r'\{.*"product_search".*\}', full_response, re.DOTALL)
-            print("json_match " + json_match)
             if json_match:
                 json_str = json_match.group(0)
                 product_data = json.loads(json_str)
