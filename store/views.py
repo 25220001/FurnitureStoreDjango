@@ -234,6 +234,7 @@ def product_assistant_stream(request):
         # إرسال نوع الرد في البداية
         response_type = "product_search" if is_product_search else "normal_response"
         yield f'data: {{"type":"{response_type}"}}\n\n'
+        print("available_colors " + ', '.join(available_colors))
 
         if is_product_search:
             # System prompt للبحث في المنتجات
@@ -286,6 +287,7 @@ def product_assistant_stream(request):
 
                 # البحث في المنتجات الفعلية
                 products_found = search_products_by_criteria(product_data)
+                print("full_response " + full_response)
 
                 # إرسال النتائج
                 result_data = {
