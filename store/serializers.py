@@ -108,7 +108,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return None
 
     def get_images(self, obj):
-        images = obj.images.exclude(image__iendswith='.glb').all()
+        images = obj.images.exclude(
+            image__iendswith='.glb').order_by('-is_primary')
         return ProductImageSerializer(images, many=True, context=self.context).data
 
 
