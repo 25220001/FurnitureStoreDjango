@@ -639,7 +639,7 @@ class ImageSearchView(APIView):
             # Serialize the results
             results = []
             for item in similar_products:
-                if item['similarity'] > 0.8:
+                if item['similarity'] >= 0.5:
                     product_data = ProductSerializer(item['product']).data
                     product_data['similarity_score'] = round(
                         item['similarity'], 4)
