@@ -101,7 +101,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return None
 
     def get_glb_image(self, obj):
-        image = obj.images.exclude(image__iendswith='.glb').first()
+        image = obj.images.filter(image__iendswith='.glb').first()
         if image and image.image:
             request = self.context.get('request')
             return request.build_absolute_uri(image.image.url) if request else image.image.url
