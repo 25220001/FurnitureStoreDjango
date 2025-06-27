@@ -1,7 +1,7 @@
 
 # serializers.py
 from rest_framework import serializers
-from .models import Category, Product, ProductImage, Review, Wishlist
+from .models import Category, Color, Product, ProductImage, Review, Wishlist
 from django.contrib.auth.models import User
 
 
@@ -19,7 +19,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
-        fields = ['id', 'image', 'color', 'alt_text', 'is_primary']
+        fields = ['image', 'alt_text', 'is_primary']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -100,8 +100,50 @@ class WishlistSerializer(serializers.ModelSerializer):
         fields = ['id', 'product']
 
 
+class ImageSearchSerializer(serializers.Serializer):
+    image = serializers.FileField()  # Changed from ImageField to FileField
+    top_k = serializers.IntegerField(default=5, min_value=1, max_value=20)
+
+    def validate_image(self, value):
+        """Validate that the uploaded file is a valid image"""
+        from PIL import Image
+        import io
+
+        # Check file extension
+        valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
+        if not any(value.name.lower().endswith(ext) for ext in valid_extensions):
+            raise serializers.ValidationError(
+                "Invalid image format. Supported formats: JPG, PNG, GIF, BMP, WebP")
+
+        # Check if file can be opened as image
+        try:
+            # Reset file pointer
+            value.seek(0)
+            # Try to open and verify image
+            with Image.open(io.BytesIO(value.read())) as img:
+                img.verify()
+            # Reset file pointer after verification
+            value.seek(0)
+        except Exception as e:
+            raise serializers.ValidationError(f"Invalid image file: {str(e)}")
+
+        # Check file size (max 10MB)
+        if value.size > 10 * 1024 * 1024:
+            raise serializers.ValidationError(
+                "Image file too large. Maximum size is 10MB")
+
+        return value
+
+
+class ColorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Color
+        fields = ['id', 'name', 'hex_code']
+
+
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
+    available_colors = ColorSerializer(many=True, read_only=True)
     effective_price = serializers.ReadOnlyField()
     discount_percentage = serializers.ReadOnlyField()
     average_rating = serializers.ReadOnlyField()
@@ -114,10 +156,5 @@ class ProductSerializer(serializers.ModelSerializer):
             'price', 'sale_price', 'effective_price', 'discount_percentage',
             'sku', 'stock_quantity', 'condition', 'is_active', 'is_featured',
             'is_on_sale', 'is_best_seller', 'average_rating', 'review_count',
-            'images'
+            'images', 'available_colors'
         ]
-
-
-class ImageSearchSerializer(serializers.Serializer):
-    image = serializers.ImageField()
-    top_k = serializers.IntegerField(default=5, min_value=1, max_value=20)
