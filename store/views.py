@@ -195,21 +195,17 @@ def product_assistant_stream(request):
             'error': 'الرسالة مطلوبة'
         }, status=400)
 
-    # الحصول على تاريخ المحادثة
     chat_context = get_chat_history(session_id)
 
-    # الحصول على الفئات والألوان المتاحة
     available_categories = list(
         Category.objects.values_list('name', flat=True))
     available_colors = list(Color.objects.values_list('name', flat=True))
 
     def generate_response():
-        # إعداد السياق مع التاريخ
         context_messages = chat_context + [
             {"role": "user", "content": user_message}
         ]
 
-        # الحل الأول: تحليل مبدئي لتحديد نوع الرد
         pre_analysis_prompt = f"""
 Quick analysis: Is the user asking to find a specific product?
 
@@ -221,18 +217,16 @@ Respond with one word only:
 - "general" → if the message is asking general questions, exploring available options (like asking about colors or categories), or casual conversation without product intent
 """
 
-        # تحليل مبدئي سريع
         pre_response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "system", "content": pre_analysis_prompt}
-                      ] + context_messages[-3:],  # آخر 3 رسائل للسياق
+                      ] + context_messages[-3:],
             max_tokens=10,
             temperature=0.1
         )
 
         is_product_search = "product" in pre_response.choices[0].message.content
 
-        # إرسال نوع الرد في البداية
         response_type = "product_search" if is_product_search else "normal_response"
         yield f'data: {{"type":"{response_type}"}}\n\n'
         print("available_colors " + ', '.join(available_colors))
@@ -263,7 +257,6 @@ Respond with one word only:
         Use the previous conversation context to give a consistent and relevant reply.
         """
 
-        # استدعاء ChatGPT للرد الأساسي مع السياق
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "system", "content": analysis_prompt}
@@ -275,7 +268,6 @@ Respond with one word only:
 
         full_response = ""
 
-        # Stream the response
         for chunk in response:
             if chunk.choices[0].delta.content is not None:
                 content = chunk.choices[0].delta.content
@@ -283,19 +275,15 @@ Respond with one word only:
                 if (not is_product_search):
                     yield f"data: {json.dumps({'chunk': content}, ensure_ascii=False)}\n\n"
 
-        # معالجة النتيجة النهائية
         if is_product_search:
-            # استخراج JSON من الإجابة
             print("full_response " + full_response)
             print("full_response " + str(json.loads(full_response)))
 
             product_data = json.loads(full_response)
 
-            # البحث في المنتجات الفعلية
             products_found = search_products_by_criteria(product_data)
             print("json_match " + str(products_found))
 
-            # إرسال النتائج
             result_data = {
                 'final_result': 'product_search',
                 'message': product_data.get('message', ''),
@@ -325,8 +313,6 @@ Respond with one word only:
 
     return response
 
-# إضافة endpoint لجلب تاريخ المحادثة
-
 
 @csrf_exempt
 @require_http_methods(["GET"])
@@ -346,8 +332,6 @@ def get_chat_history_endpoint(request):
     )
 
     return JsonResponse({'history': list(history)})
-
-# إضافة endpoint لمسح تاريخ المحادثة
 
 
 @csrf_exempt
@@ -374,13 +358,11 @@ def search_products_by_criteria(criteria):
     دالة للبحث في المنتجات حسب المعايير المحددة
     """
     # try:
-    # بدء الاستعلام الأساسي
     queryset = Product.objects.filter(is_active=True).select_related(
         'category').prefetch_related('reviews', 'images')
 
     print("search_products_by_criteria " + str(criteria))
 
-    # البحث حسب النوع/الاسم
     if criteria.get('type'):
         product_type = criteria['type']
         queryset = queryset.filter(
@@ -391,7 +373,6 @@ def search_products_by_criteria(criteria):
 
     print("search_products_by_criteria " + str(queryset))
 
-    # البحث حسب الفئة
     if criteria.get('category'):
         category = criteria['category']
         queryset = queryset.filter(
@@ -399,7 +380,6 @@ def search_products_by_criteria(criteria):
             Q(category__slug__icontains=category)
         )
 
-    # البحث حسب اللون
     if criteria.get('color') and criteria['color'] != 'أي لون':
         colors = criteria['color']
         if isinstance(colors, list):
