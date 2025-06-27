@@ -23,4 +23,7 @@ urlpatterns = [
 
     path('api/product-assistant-stream/', views.product_assistant_stream,
          name='product_assistant_stream'),
+    path('search/image/', views.ImageSearchView.as_view(), name='image_search'),
+    path('admin/refresh-features/',
+         views.RefreshFeaturesView.as_view(), name='refresh_features'),
 ]

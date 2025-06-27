@@ -1,3 +1,8 @@
+from rest_framework.views import APIView
+from .services import ImageSimilarityService
+from .serializers import ProductSerializer, ImageSearchSerializer
+import tempfile
+from rest_framework.parsers import MultiPartParser, FormParser
 import os
 from .models import Color
 import logging
@@ -585,3 +590,102 @@ def search_products_advanced(criteria):
 
     except Exception as e:
         return []
+
+
+class ImageSearchView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+
+    def __init__(self):
+        super().__init__()
+        self.similarity_service = ImageSimilarityService()
+
+    def post(self, request, *args, **kwargs):
+        """
+        Search for similar products using image upload
+        """
+        serializer = ImageSearchSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(
+                {'error': 'Invalid input', 'details': serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        uploaded_image = serializer.validated_data['image']
+        top_k = serializer.validated_data.get('top_k', 5)
+
+        # Create temporary file for the uploaded image
+        temp_file = None
+        try:
+            # Save uploaded file temporarily
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
+                for chunk in uploaded_image.chunks():
+                    temp_file.write(chunk)
+                temp_file_path = temp_file.name
+
+            # Find similar products
+            similar_products = self.similarity_service.find_similar_products(
+                temp_file_path,
+                top_k=top_k
+            )
+
+            if not similar_products:
+                return Response(
+                    {'message': 'No similar products found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Serialize the results
+            results = []
+            for item in similar_products:
+                product_data = ProductSerializer(item['product']).data
+                product_data['similarity_score'] = round(item['similarity'], 4)
+                results.append(product_data)
+
+            return Response({
+                'results': results,
+                'total_found': len(results),
+                'search_parameters': {
+                    'top_k': top_k,
+                    'image_name': uploaded_image.name
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {'error': 'Internal server error', 'message': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        finally:
+            # Clean up temporary file
+            if temp_file and os.path.exists(temp_file_path):
+                try:
+                    os.unlink(temp_file_path)
+                except Exception as e:
+                    ...
+
+
+class RefreshFeaturesView(APIView):
+    """
+    Endpoint to refresh cached product features
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.similarity_service = ImageSimilarityService()
+
+    def post(self, request, *args, **kwargs):
+        """Refresh product image features cache"""
+        try:
+            product_features = self.similarity_service.get_product_features(
+                force_refresh=True)
+            return Response({
+                'message': 'Product features refreshed successfully',
+                'total_products': len(product_features)
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {'error': 'Failed to refresh features', 'message': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
