@@ -196,6 +196,8 @@ class Product(TimeStampedModel):
     slug = models.SlugField(max_length=200, unique=True)
     description = models.TextField()
     short_description = models.CharField(max_length=300, blank=True)
+    related_products = models.ManyToManyField(
+        'self', blank=True, symmetrical=False, related_name='related_to')
 
     # Relationships
     category = models.ForeignKey(
