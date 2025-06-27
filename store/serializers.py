@@ -67,13 +67,13 @@ class ProductListSerializer(serializers.ModelSerializer):
 class ProductDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for individual product view"""
     category = CategorySerializer(read_only=True)
-    images = ProductImageSerializer(many=True, read_only=True)
     reviews = ReviewSerializer(many=True, read_only=True)
     related_products = ProductListSerializer(many=True, read_only=True)
     average_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
     main_image = serializers.SerializerMethodField()
     glb_image = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -106,6 +106,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             return request.build_absolute_uri(image.image.url) if request else image.image.url
         return None
+
+    def get_images(self, obj):
+        images = obj.images.exclude(image__iendswith='.glb').all()
+        return ProductImageSerializer(images, many=True, context=self.context).data
 
 
 class WishlistSerializer(serializers.ModelSerializer):
