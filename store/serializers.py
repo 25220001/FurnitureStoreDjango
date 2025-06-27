@@ -72,6 +72,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     related_products = ProductListSerializer(many=True, read_only=True)
     average_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
+    main_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -90,6 +91,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_review_count(self, obj):
         return obj.reviews.count()
+
+    def get_main_image(self, obj):
+        primary_image = obj.images.filter(is_primary=True).first()
+        if primary_image and primary_image.image:
+            request = self.context.get('request')
+            return request.build_absolute_uri(primary_image.image.url) if request else primary_image.image.url
+        return None
 
 
 class WishlistSerializer(serializers.ModelSerializer):
