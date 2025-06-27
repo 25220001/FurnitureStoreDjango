@@ -237,27 +237,30 @@ def product_assistant_stream(request):
         print("available_colors " + ', '.join(available_colors))
 
         if is_product_search:
-            # System prompt للبحث في المنتجات
             analysis_prompt = f"""
-أنت مساعد ذكي لموقع {website_name} للأثاث والمفروشات.
+        You are an intelligent assistant for {website_name}, a furniture and home decor website.
 
-الفئات المتاحة: {', '.join(available_categories)}
-الألوان المتاحة: {', '.join(available_colors)}
+        Available categories: {', '.join(available_categories)}
+        Available colors: {', '.join(available_colors)}
 
-المستخدم يبحث عن منتج. استخدم السياق السابق للمحادثة لفهم أفضل.
-أرجع JSON format فقط بهذا الشكل:
-{{"product_search": true, "message": "رساله اضافيه", "color": "اللون", "category": "الفئة"}}
-يرجى أن يكون البحث شاملاً ويأخذ في الاعتبار الألوان والفئات المتاحة وتحمل نفس القيمه والحروف واذا يوجود اكثر من خيار مسموح بأستخدام list
-قم بكتابة جميل القيم بالانجليزيه الا messsage معتمده على السياق السابق.
-إذا لم يكن هناك منتج محدد، أعد رسالة مفيدة للمستخدم.
-"""
+        The user is searching for a product. Use the previous conversation context to better understand the request.
+        Always respond with this exact JSON format:
+        {{"product_search": true, "message": "additional message", "color": "color", "category": "category"}}
+
+        Guidelines:
+        - The keys and values for "color" and "category" must strictly match the available options above (same spelling and case).
+        - Use English for all values in the JSON **except** "message".
+        - If there are multiple applicable colors or categories, return them as a list.
+        - "message" should be written in the user's language and based on their intent.
+        - If no specific product can be determined, respond with a helpful message.
+        """
         else:
-            # System prompt للرد العادي
             analysis_prompt = f"""
-أنت مساعد ودود لموقع {website_name} للأثاث والمفروشات.
-المستخدم لا يبحث عن منتج معين، لذا رد بشكل طبيعي ومفيد.
-استخدم السياق السابق للمحادثة لتقديم رد متسق ومناسب.
-"""
+        You are a friendly assistant for {website_name}, a furniture and home decor website.
+
+        The user is not searching for a specific product. Respond naturally and helpfully.
+        Use the previous conversation context to give a consistent and relevant reply.
+        """
 
         # استدعاء ChatGPT للرد الأساسي مع السياق
         response = client.chat.completions.create(
@@ -303,7 +306,7 @@ def product_assistant_stream(request):
             save_chat_history(
                 session_id,
                 user_message,
-                f"بحث منتج: {product_data}",
+                full_response,
                 'product_search',
             )
 
