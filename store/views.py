@@ -594,6 +594,7 @@ def search_products_advanced(criteria):
 
 class ImageSearchView(APIView):
     parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [AllowAny]
 
     def __init__(self):
         super().__init__()
