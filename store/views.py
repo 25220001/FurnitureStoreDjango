@@ -211,13 +211,14 @@ def product_assistant_stream(request):
 
         # الحل الأول: تحليل مبدئي لتحديد نوع الرد
         pre_analysis_prompt = f"""
-تحليل سريع: هل هذه الرسالة تبحث عن منتج؟
-السياق السابق متاح للمساعدة في الفهم.
-رسالة المستخدم: "{user_message}"
+Quick analysis: Is the user asking to find a specific product?
 
-أجب بكلمة واحدة فقط:
-- "منتج" إذا كان يبحث عن أثاث أو ديكور أو مفروشات
-- "عادي" إذا كان سؤال عام أو محادثة عادية
+You have access to the previous conversation for context.
+User message: "{user_message}"
+
+Respond with one word only:
+- "product" → if the user is explicitly or implicitly looking to buy or browse a specific item (furniture, decor, etc.)
+- "general" → if the message is asking general questions, exploring available options (like asking about colors or categories), or casual conversation without product intent
 """
 
         # تحليل مبدئي سريع
@@ -229,7 +230,7 @@ def product_assistant_stream(request):
             temperature=0.1
         )
 
-        is_product_search = "منتج" in pre_response.choices[0].message.content
+        is_product_search = "product" in pre_response.choices[0].message.content
 
         # إرسال نوع الرد في البداية
         response_type = "product_search" if is_product_search else "normal_response"
