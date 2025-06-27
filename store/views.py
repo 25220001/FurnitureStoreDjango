@@ -67,7 +67,7 @@ class CategoryListView(generics.ListAPIView):
 
 class ProductDetailView(generics.RetrieveAPIView):
     queryset = Product.objects.all().select_related('category').prefetch_related(
-        'gallery_images', 'reviews__user', 'related_products'
+        'images', 'reviews__user', 'related_products'
     )
     serializer_class = ProductDetailSerializer
     lookup_field = 'slug'

@@ -67,7 +67,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 class ProductDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for individual product view"""
     category = CategorySerializer(read_only=True)
-    gallery_images = ProductImageSerializer(many=True, read_only=True)
+    images = ProductImageSerializer(many=True, read_only=True)
     reviews = ReviewSerializer(many=True, read_only=True)
     related_products = ProductListSerializer(many=True, read_only=True)
     average_rating = serializers.SerializerMethodField()
@@ -78,7 +78,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'slug', 'price', 'main_image',
             'detailed_description', 'specifications', 'category',
-            'gallery_images', 'reviews', 'related_products',
+            'images', 'reviews', 'related_products',
             'average_rating', 'review_count'
         ]
 
