@@ -639,9 +639,12 @@ class ImageSearchView(APIView):
             # Serialize the results
             results = []
             for item in similar_products:
-                product_data = ProductSerializer(item['product']).data
-                product_data['similarity_score'] = round(item['similarity'], 4)
-                results.append(product_data)
+                if item['similarity'] > 0.8:
+                    product_data = ProductSerializer(item['product']).data
+                    product_data['similarity_score'] = round(
+                        item['similarity'], 4)
+
+                    results.append(product_data)
 
             return Response({
                 'results': results,
