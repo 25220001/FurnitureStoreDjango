@@ -73,11 +73,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     average_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
     main_image = serializers.SerializerMethodField()
+    glb_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'slug', 'price', 'main_image',
+            'id', 'name', 'slug', 'price', 'main_image', 'glb_image',
             'description', 'category',
             'images', 'reviews', 'related_products',
             'average_rating', 'review_count'
@@ -97,6 +98,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         if primary_image and primary_image.image:
             request = self.context.get('request')
             return request.build_absolute_uri(primary_image.image.url) if request else primary_image.image.url
+        return None
+
+    def get_glb_image(self, obj):
+        image = obj.images.exclude(file__iendswith='.glb').first()
+        if image and image.image:
+            request = self.context.get('request')
+            return request.build_absolute_uri(image.image.url) if request else image.image.url
         return None
 
 
