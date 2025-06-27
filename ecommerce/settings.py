@@ -104,6 +104,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://funco-one.vercel.app"
     # Add your frontend domain here
 ]
+USE_X_FORWARDED_HOST = True
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
