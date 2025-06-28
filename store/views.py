@@ -378,12 +378,14 @@ def search_products_by_criteria(criteria):
 
     print("search_products_by_criteria " + str(queryset))
 
-    if criteria.get('category'):
-        category = criteria['category']
-        queryset = queryset.filter(
-            Q(category__name__icontains=category) |
-            Q(category__slug__icontains=category)
-        )
+    # if criteria.get('category'):
+    #     category = criteria['category']
+    #     queryset = queryset.filter(
+    #         Q(category__name__icontains=category) |
+    #         Q(category__slug__icontains=category)
+    #     )
+
+    print("search_products_by_criteria category " + str(queryset))
 
     if criteria.get('color') and criteria['color'] != 'أي لون':
         colors = criteria['color']
