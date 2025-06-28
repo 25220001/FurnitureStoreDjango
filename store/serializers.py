@@ -74,6 +74,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     main_image = serializers.SerializerMethodField()
     glb_image = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
+    available_colors = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -107,10 +108,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(image.image.url) if request else image.image.url
         return None
 
-    def get_images(self, obj):
-        images = obj.images.exclude(
-            image__iendswith='.glb').order_by('-is_primary')
-        return ProductImageSerializer(images, many=True, context=self.context).data
+    def get_available_colors(self, obj):
+        available_colors = obj.available_colors
+        return Color(available_colors, many=True, context=self.context).data
 
 
 class WishlistSerializer(serializers.ModelSerializer):
