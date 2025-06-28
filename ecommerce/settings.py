@@ -101,7 +101,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",  # Vue.js default port
     "http://127.0.0.1:8080",
     "https://funco.publicvm.com",
-    "https://funco-one.vercel.app"
+    "https://funco.run.place"
     # Add your frontend domain here
 ]
 USE_X_FORWARDED_HOST = True
