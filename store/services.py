@@ -46,9 +46,11 @@ class ImageSimilarityService:
         if not force_refresh:
             cached_features = cache.get(self.features_cache_key)
             if cached_features:
+                print("Using cached product features.")
                 return cached_features
 
         # Get all active products with primary images
+        print("Fetching product images from database...")
         products_with_images = Product.objects.filter(
             is_active=True,
             images__is_primary=True
@@ -74,8 +76,8 @@ class ImageSimilarityService:
                 except Exception as e:
                     continue
 
-        # Cache the features for 1 hour
-        cache.set(self.features_cache_key, product_features, 3600)
+        cache.set(self.features_cache_key, product_features,
+                  604800)  # Cache for 1 week
         return product_features
 
     def find_similar_products(self, query_image_path, top_k=5):
