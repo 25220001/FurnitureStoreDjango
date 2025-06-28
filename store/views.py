@@ -684,6 +684,7 @@ class RefreshFeaturesView(APIView):
     def __init__(self):
         super().__init__()
         self.similarity_service = ImageSimilarityService()
+        permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         """Refresh product image features cache"""
