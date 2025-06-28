@@ -238,22 +238,22 @@ Respond with one word only:
 
         if is_product_search:
             analysis_prompt = f"""
-        You are an intelligent assistant for {website_name}, a furniture and home decor website.
+You are an intelligent assistant for {website_name}, a furniture and home decor website.
 
-        Available categories: [{', '.join(available_categories)}]
-        Available colors: [{', '.join(available_colors)}]
+Available categories: [{', '.join(available_categories)}]
+Available colors: [{', '.join(available_colors)}]
 
-        The user is searching for a product. Use the previous conversation context to better understand the request.
-        Always respond with this exact JSON format:
-        {{"product_search": true, "message": "additional message", "color": "color", "category": "category"}}
+The user is searching for a product. Use the previous conversation context to better understand the request.
+Always respond with this exact JSON format:
+{{"product_search": true, "message": "additional message", "color": "color", "category": "category"}}
 
-        Guidelines:
-        - The keys and values for "color" and "category" must strictly match the available options above (same spelling and case).
-        - Use English for all values in the JSON **except** "message".
-        - If there are multiple applicable colors or categories, return them as a list.
-        - "message" should be written in the user's language and based on their intent.
-        - If no specific product can be determined, respond with a helpful message.
-        """
+Guidelines:
+- The result must include exactly one color and one category.
+- The result must be only one product.
+- The "color" and "category" values must exactly match one of the available options above (same spelling and case).
+- Use English for all values in the JSON **except** "message".
+- "message" should be written in the user's language and reflect their intent clearly.
+- If the user’s intent is unclear, respond with a helpful message in "message" and include your best guess for color and category."""
         else:
             analysis_prompt = f"""
         You are a friendly assistant for {website_name}, a furniture and home decor website.
