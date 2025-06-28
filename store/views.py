@@ -204,7 +204,11 @@ def product_assistant_stream(request):
 
     available_categories = list(
         Category.objects.values_list('name', flat=True))
-    available_colors = list(Color.objects.values_list('hex_code', flat=True))
+    available_colors = list(
+        Color.objects.filter(products__isnull=False)
+        .distinct()
+        .values_list('hex_code', flat=True)
+    )
 
     def generate_response():
         context_messages = chat_context + [
@@ -387,7 +391,7 @@ def search_products_by_criteria(criteria):
 
     print("search_products_by_criteria category " + str(queryset))
 
-    if criteria.get('color') and criteria['color'] != 'أي لون':
+    if criteria.get('color'):
         colors = criteria['color']
         if isinstance(colors, list):
             color_q = Q()
