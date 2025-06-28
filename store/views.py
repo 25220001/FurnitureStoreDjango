@@ -676,6 +676,7 @@ class ImageSearchView(APIView):
                     ...
 
 
+@csrf_exempt
 class RefreshFeaturesView(APIView):
     """
     Endpoint to refresh cached product features
