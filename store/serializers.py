@@ -81,7 +81,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'id', 'name', 'slug', 'price', 'main_image', 'glb_image',
             'description', 'category',
             'images', 'reviews', 'related_products',
-            'average_rating', 'review_count'
+            'average_rating', 'review_count', 'available_colors'
         ]
 
     def get_average_rating(self, obj):
