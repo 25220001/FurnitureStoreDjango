@@ -1,3 +1,4 @@
+from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 from .services import ImageSimilarityService
 from .serializers import ProductSerializer, ImageSearchSerializer
@@ -676,7 +677,7 @@ class ImageSearchView(APIView):
                     ...
 
 
-@csrf_exempt
+@method_decorator(csrf_exempt, name='dispatch')
 class RefreshFeaturesView(APIView):
     """
     Endpoint to refresh cached product features
