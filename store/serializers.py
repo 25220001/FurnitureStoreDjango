@@ -1,5 +1,6 @@
 
 # serializers.py
+import json
 from rest_framework import serializers
 from .models import Category, Color, Product, ProductImage, Review, Wishlist
 from django.contrib.auth.models import User
@@ -115,7 +116,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_available_colors(self, obj):
         available_colors = obj.available_colors
-        return Color(available_colors)
+        return json.dumps(Color(available_colors))
 
 
 class WishlistSerializer(serializers.ModelSerializer):
