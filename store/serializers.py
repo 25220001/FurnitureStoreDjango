@@ -115,7 +115,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_available_colors(self, obj):
         available_colors = obj.available_colors
-        return Color(available_colors).data
+        return Color(available_colors)
 
 
 class WishlistSerializer(serializers.ModelSerializer):
