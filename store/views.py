@@ -677,11 +677,11 @@ class ImageSearchView(APIView):
                     ...
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class RefreshFeaturesView(APIView):
     """
     Endpoint to refresh cached product features
     """
+    parser_classes = (MultiPartParser, FormParser)
     permission_classes = [AllowAny]
 
     def __init__(self):
