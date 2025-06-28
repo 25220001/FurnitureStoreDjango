@@ -9,7 +9,7 @@ urlpatterns = [
     path('categories/', views.CategoryListView.as_view(), name='category-list'),
     path('api/products/<slug:slug>/',
          views.ProductDetailView.as_view(), name='product-detail'),
-    path('categories/<slug:category_slug>/products/',
+    path('api/categories/<slug:category_slug>/products/',
          views.category_products, name='category-products'),
 
     # Review endpoints
