@@ -74,6 +74,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     main_image = serializers.SerializerMethodField()
     glb_image = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
+    colors = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -81,7 +82,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'id', 'name', 'slug', 'price', 'main_image', 'glb_image',
             'description', 'category',
             'images', 'reviews', 'related_products',
-            'average_rating', 'review_count', 'available_colors__hex_code',
+            'average_rating', 'review_count', 'colors'
         ]
 
     def get_average_rating(self, obj):
@@ -112,9 +113,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             image__iendswith='.glb').order_by('-is_primary')
         return ProductImageSerializer(images, many=True, context=self.context).data
 
-    # def get_available_colors(self, obj):
-    #     available_colors = obj.available_colors
-    #     return Color(available_colors).hex_code
+    def get_colors(self, obj):
+        return [{'name': color.name, 'hex_code': color.hex_code} for color in obj.available_colors.all()]
 
 
 class WishlistSerializer(serializers.ModelSerializer):
