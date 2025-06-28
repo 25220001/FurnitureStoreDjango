@@ -204,7 +204,7 @@ def product_assistant_stream(request):
 
     available_categories = list(
         Category.objects.values_list('name', flat=True))
-    available_colors = list(Color.objects.values_list('name', flat=True))
+    available_colors = list(Color.objects.values_list('hex_code', flat=True))
 
     def generate_response():
         context_messages = chat_context + [
@@ -240,8 +240,8 @@ Respond with one word only:
             analysis_prompt = f"""
         You are an intelligent assistant for {website_name}, a furniture and home decor website.
 
-        Available categories: {', '.join(available_categories)}
-        Available colors: {', '.join(available_colors)}
+        Available categories: [{', '.join(available_categories)}]
+        Available colors: [{', '.join(available_colors)}]
 
         The user is searching for a product. Use the previous conversation context to better understand the request.
         Always respond with this exact JSON format:
@@ -390,11 +390,11 @@ def search_products_by_criteria(criteria):
         if isinstance(colors, list):
             color_q = Q()
             for color in colors:
-                color_q |= Q(available_colors__name__icontains=color)
+                color_q |= Q(available_colors__hex_code__icontains=color)
             queryset = queryset.filter(color_q)
         else:
             queryset = queryset.filter(
-                available_colors__name__icontains=colors)
+                available_colors__hex_code__icontains=colors)
 
     print("search_products_by_criteria " + str(queryset))
 
